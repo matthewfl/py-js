@@ -67,7 +67,7 @@ PY = {
 		"js": function (obj) { // run some javascript code
 			obj.code = "(function () ";
 			obj.afterIndentClose = ")()";
-			PY._isJavascript = obj.indent;
+			PY._isJavascript = obj.indent+1;
 		}
 	},
 	_isJavascript: false,
