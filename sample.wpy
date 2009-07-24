@@ -1,0 +1,28 @@
+# sample code
+
+print("""this is1
+something that I 2.am tyring
+to check something3""", "and something else");
+
+def hello( hi, what):
+	if a==b:
+		pass
+	elif a>b:
+		js:
+			if(1==1)
+				alert(1)
+	else:
+		print("hi")
+		
+		
+"""
+def hello (hi,what):
+		if a==b: 
+		pass
+		elif:
+			if(1==1)
+			alert(1)
+		else:
+			print("hi")
+			
+"""

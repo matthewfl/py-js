@@ -1,0 +1,17 @@
+<html>
+		<head>
+				<title>Javascript Python</title>
+				<script src="jquery.js" ></script>
+				<script src="py.js" ></script>
+				<script>
+						$.get('sample.wpy', function (text) {
+								//Python.run(text);
+								var t = PY.compile(text);
+								alert(t);
+								eval(t);
+						});
+				</script>
+		</head>
+		<body>
+		</body>
+</html>
