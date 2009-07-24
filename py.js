@@ -1,4 +1,15 @@
 PY = {
+	_copy: function (d) {
+		function a () {};
+		a.prototype = d;
+		return new d;
+	},
+	_random: function () {
+		var t = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM_$";
+		var ret = "";
+		for(var a=15;a>0;a--) ret += t[Math.round(Math.random()*t.length)];
+		return ret;
+	},
 	_files: {},
 	_functions: {
 		// normal python functions
@@ -11,9 +22,28 @@ PY = {
 		"len": function (w) {
 			return w.length;
 		},
+		"print": function (t) {
+			// TODO: make this like the real python print function
+			alert(arguments[0]);
+		},
 		
 		// system functions
 		"PY___MakeFunction___": function (where, name, fun) {
+			where[name] = fun;
+		},
+		"PY___PraseArgs___": function (args, data) {
+			var a = [];
+			for(var i=0;typeof args[i] != "undefined"; i++) a.push(args[i]);
+			var ret = PY._copy(data.default);
+			for(var i=0;i<a.length;i++) ret[data.num[i]] = a[i];
+			for(var n in args) {
+				if(PY._regex.exec(n) == null) {
+					ret[n] = args[n];
+				}
+			}
+			return ret;
+		},
+		"PY___BuildClass___": function(where, name, fun) {
 			
 		}
 		//,"PY___Pass___": function () {}
@@ -21,23 +51,35 @@ PY = {
 	_regex: {
 		"indent": 		/([^\S]*)/
 		,"preDef": 		/([a-z]+)/
-		,"defFind":		/(def)\s+([A-Za-z][A-Za-z0-9]+)\s*\((.*)\):/
+		,"defFind":		/(def)\s+([A-Za-z][A-Za-z0-9]*)\s*\((.*)\):/
+		,"varName":		/[a-zA-Z_][a-zA-Z0-9_]*/
 		,"ifFind":		/if\s+([^:]+):/
-		,"elifFind":		/elif\s+([^:]+):/
-		,"ifReplace":		function (c) { return c.replace(/and/ig, "&&").replace(/or/ig, "||").replace(/\<\>/g, "!="); }
+		,"elifFind":	/elif\s+([^:]+):/
+		,"ifReplace":	function (c) { return c.replace(/and/ig, "&&").replace(/or/ig, "||").replace(/\<\>/g, "!="); }
+		,"whileFind":	/while\s+([^:]+):/
+		,"forFind":		/for\s+([^]+?)\s+in\s+([^]+?):/
+		,"notNum":		/[0-9]/
 	},
 	_preName: {
 		"def": function (obj) {
 			var d = PY._regex.defFind.exec(obj.code); // [all, "def", name, args]
 			obj.code = "PY___MakeFunction___(this, \""+d[2].replace(/\"/g, "\"")+"\", function (PY___argsPassed___)";
+			var argsList = d[4].split(",");
+			
 			obj.afterIndent = "var PY___argsPrased___ = PY___PraseArgs___(PY___argsPassed___, "+"'argsData'"+"); \n" // load the args
 				+"with (PY___argsPrased___) {"; 
 			obj.afterIndentClose = ")";
 			obj.beforeIndentClose = "}";
 		},
 		"for": function (obj) {
+			var d = PY._regex.forFind.exec(obj.code);
+			var name = PY._random();
+			obj.code = "for( "+name+" in "+d[2]+" )";
+			obj.afterIndent = "var "+d[1]+" = "+d[2]+"["+name+"];";
 		},
 		"while": function (obj) {
+			var d = PY._regex.whileFind.exec(obj.code);
+			obj.code = "while( "+d[1]+" )";
 		},
 		"class": function (obj) {
 		},
@@ -58,11 +100,18 @@ PY = {
 			obj.code = "try";
 		},
 		"except": function (obj) {
+			obj.code = "catch (PY___ERROR___)"
 		},
 		"pass": function (obj) {
 			obj.code = "{}";
 			obj.indent--;
 			//obj.code = "PY___Pass___()";
+		},
+		"import": function (obj) {
+			
+		},
+		"from": function (obj) {
+		
 		},
 		"js": function (obj) { // run some javascript code
 			obj.code = "(function () ";
@@ -115,14 +164,14 @@ PY = {
         code_split = null;
         for(var a = 0;a<list.length;a++) {
         	var name = PY._regex.preDef.exec(list[a].code);
-        	if(name != null) {
-	        	if(PY._preName[name[1]] && (PY._isJavascript === false || list[a].indent < PY._isJavascript)) {
-	        		//list[a].indent++;
-	        		PY._isJavascript = false;
-	        		PY._preName[name[1]](list[a]);
-	        	}else if(PY._isJavascript !== false) {
-	        		list[a].indent = PY._isJavascript;
-	        	}
+        	if(PY._isJavascript !== false) {
+        		if(PY._isJavascript > list[a].indent)
+        			PY._isJavascript = false;
+        		else
+        			list[a].indent = PY._isJavascript;
+        	}
+        	if(name != null && PY._preName[name[1]] && PY._isJavascript === false) {
+        		PY._preName[name[1]](list[a]);
         	}
         }
         var out = "";
@@ -131,7 +180,6 @@ PY = {
         var afterIndentClose = [];
         var afterIndentOpen = "";
         for(var a = 0;a<list.length;a++) {
-        	afterIndentOpen = list[a].afterIndent;
         	if(list[a].indent != indent) {
         		if(list[a].indent > indent) {
 	        		beforeIndentClose.push(list[a-1].beforeIndentClose);
@@ -147,6 +195,7 @@ PY = {
         		}
         	}else
         		out += list[a].code+"\n";
+        	afterIndentOpen = list[a].afterIndent;
         }
         beforeIndentClose = null;
         afterIndentClose = null;
@@ -157,6 +206,15 @@ PY = {
         }
         
         return out;
+	},
+	runCode: function (code) {
+		var c = new Function ( "PY___RunEnv___", "var PY___IMPORT___ = {}; with(this) { with(PY___RunEnv___) { with(PY___IMPORT___) {\n"+ code + "\n}}}");
+		var obj = {};
+		try {
+			c.call(obj, PY._functions);
+		}catch(e) {
+			alert(e);
+		}
 	}
 };
 
