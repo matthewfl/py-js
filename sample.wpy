@@ -14,11 +14,17 @@ def hello( hi, what):
 	else:
 		print("hi")
 		
+def debug(a,b=None):
+	js:
+		alert(JSON.stringify(PY___argsPassed___))
+
+
 def hi():
 	js:
 		alert('hi');
 
-hi()
+if __name__ == "__main__":
+	debug(1,2,3)
 		
 		
 """

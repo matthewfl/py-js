@@ -1,0 +1,14 @@
+def main():
+	print("hi")
+	
+def hi():
+	js:
+		alert("hello world");
+
+def say(name="world"):
+	js:
+		alert(name)
+
+if __name__ == "__main__":
+	main()
+	say(name="something")
