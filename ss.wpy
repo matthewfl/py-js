@@ -8,6 +8,7 @@ def hi():
 def say(name="world"):
 	js:
 		alert(name)
+		alert(1)
 
 if __name__ == "__main__":
 	main()

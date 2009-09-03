@@ -18,7 +18,8 @@
 
 PY = {
 	const: {
-		CLASS_NO_INIT: 1+Math.random()
+		CLASS_NO_INIT: 1+Math.random(),
+		RAND_PRE: "PY_$"
 	},
 	_copy: function (d) {
 		function a () {};
@@ -27,7 +28,7 @@ PY = {
 	},
 	_random: function () {
 		var t = "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM_$";
-		var ret = "";
+		var ret = PY.const.RAND_PRE;
 		for(var a=15;a>0;a--) ret += t[Math.round(Math.random()*t.length)];
 		return ret;
 	},
@@ -288,16 +289,19 @@ PY = {
         var o = "";
         while(o != out) { o = out; 
         // fix function calls
+        // TODO: make this better
         out = out.replace(/@\(@([^]*)@\)\@/g, PY._argCallBuild);
         // clean up
-        out = out.replace(/\n\n/g, "\n").replace(/\}\n\}/g,"}}").replace(/\{\n\}/g, "{}").replace(/\{\n\{/g, "{{"); 
+        out = out.replace(/([\{\[\(\)\]\};])[\n\s]+([\{\[\(\)\]\};])/g, "$1$2")
+	       .replace(/\n\n/g, "\n")
+	       .replace(/([\{\};])[\n\s]+/g, "$1");
         }
         
-        return out;
+        return [out, []]; // ["code", ["import", "list"]]
 	},
 	loadCode: function (name, code) {
-		PY._files[name] = new Function ("PY___RunEnv___", "var PY___IMPORT___ = {}; with(PY._functions) { with(PY___RunEnv___) { with(PY___IMPORT___) { with(this) {\n"+ code + "\n}}}}");
-		console.log(code.split("\n"));
+		PY._files[name] = new Function ("PY___RunEnv___", "var PY___IMPORT___ = {}; with(PY._functions) { with(PY___RunEnv___) { with(PY___IMPORT___) { with(this) {\n"+ code[0] + "\n}}}}");
+		//console.log(code[0].split("\n"));
 	},
 	runCode: function (name) {
 		try {
@@ -305,6 +309,21 @@ PY = {
 		}catch(e) {
 			console.log(e);
 			alert(e.message);
+		}
+	},
+	_CompBuilder: function (c) {
+		var ret={};
+		for(var n in c) {
+			ret[n] = { 
+				code: c[n][0].replace(/;/g,";;").replace(/\n/g, ";"),
+				import: c[n][1] // ["x", "y.z"]
+			};
+		}
+	},
+	_CompLoader: function (code) {
+		for(var n in code) {
+			PY.loadCode(code[n].code.replace(/;/g, "\n").replace(/\n\n/g, ";"));
+			// code[n].import
 		}
 	}
 };
@@ -318,3 +337,6 @@ String.prototype.count = function (what) {
 	}
 	return c;
 };
+
+// init code
+PY.const.RAND_PRE = PY._random();
