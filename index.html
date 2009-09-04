@@ -1,1 +1,66 @@
-py.js github page
+<html>
+	<head>
+		<title>Javascript Python</title>
+		<link rel="stylesheet" type="text/css" media="all" href="http://matthewfl.com/css/960.css">
+		<style>a {color: orange} a:visited {color: gray} textarea {width:100%}</style>
+    		<script src="http://matthewfl.com/js/jquery.js"></script>
+		<script src="http://github.com/matthewfl/py-js/raw/master/py.js"></script>
+		<script>
+			PY._functions.print = function (a) {
+				var o = $("#out");
+				o.val(a[0]+"\n"+o.val());
+			};
+			$.bind({
+				"#clear": {
+					"click": function () {
+						$("textarea").val('');
+					}
+				},
+				"#run": {
+					"click": function () {
+						var s = $("#in").val();
+						var c = PY.compile(s);
+						$("#comp").val(c[0]);
+						PY.loadCode("__main__", c);
+						PY.runCode("__main__");
+					}
+				}
+			});
+			$(function () {
+				$(".c").val('');
+			});
+		</script>
+	</head>
+	<body>
+		<div class="container_12">
+			<div class="grid_12">
+				<h1><center>Python.js sample</center></h1>
+			</div>
+			<div class="clear"> </div>
+			<div class="grid_6">
+				Input:<br>
+				<textarea id="in" rows=15>
+def main():
+	print("hi")
+
+if __name__ == "__main__":
+	main()
+				</textarea>
+				<button id="run">Run</button><button id="clear">Clear</button><br>
+				Compiled code:<br>
+				<textarea id="comp" rows=15 class="c">
+				</textarea>
+			</div>
+			<div class="grid_6">
+				print results:<br>
+				<textarea id="out" rows=15 class="c">
+				</textarea>
+				<p/>
+				<p>
+					Like in python3000 print is a function
+				</p>
+			</div>
+		</div>
+	</body>
+</html>
+
