@@ -294,10 +294,13 @@ PY = {
 	    // TODO: make this better
 	    //out = out.replace(/@\(@([^]*)@\)\@/g, PY._argCallBuild);
 	    var d = out.split("@(@");
+	    out = "";
 	    for(var a=0;a<d.length;a++) {
 	        if(d[a].count("@)@")==1) {
-	            
+	            out += '('+PY._argCallBuild(d[a].substring(0,d[a].indexOf("@)@"))) + ')' + d[a].substring(d[a].indexOf("@)@")+3);
 	        }
+		else
+		    out += d[a];
 	    }
 	}
         o="";
