@@ -8,7 +8,7 @@
 						$.get('ss.wpy?_='+Math.random(), function (text) {
 								//Python.run(text);
 								var t = PY.compile(text);
-								console.log(t);
+								console.log(t[0]);
 								PY.loadCode("__main__", t);
 								var b = PY.runCode("__main__");
 								console.log(b);
