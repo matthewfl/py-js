@@ -348,7 +348,7 @@ PY = {
 	    PY.packer.num=1;
 	},
 	compress: function (code) {
-	    code = code.replace(/([a-zA-Z_]+)/g, function (a,b) {
+	    code = code.replace(/([a-zA-Z_$]+)/g, function (a,b) {
 		if(PY.packer.data[b])
 		    return PY.packer.data[b];
 		else {
