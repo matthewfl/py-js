@@ -1,29 +1,30 @@
 /*
-	This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation, version 3.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-    
-    Created by: Matthew Francis-Landau <matthew@matthewfl.com>
-    http://github.com/matthewfl/py-js/
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Lesser General Public License as published by
+  the Free Software Foundation, version 3.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU Lesser General Public License for more details.
+  
+  You should have received a copy of the GNU Lesser General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  
+  Created by: Matthew Francis-Landau <matthew@matthewfl.com>
+  http://github.com/matthewfl/py-js/
 */
 
 
 PY = {
+    log: console.log || function () {},
     const: {
 	CLASS_NO_INIT: 1+Math.random(),
-	RAND_PRE: "PY_$"
+	RAND_PRE: ""
     },
     _copy: function (d) {
 	var a = function () {};//function a () {};
-	a.prototype = d;
+	a.prototype = d || {};
 	return new a;
     },
     _random: function () {
@@ -48,7 +49,6 @@ PY = {
 	    // TODO: make this like the real python print function
 	    alert(t[0]);
 	},
-	
 	// system functions
 	"PY___MakeFunction___": function (where, name, fun) {
 	    where[name] = fun;
@@ -65,27 +65,49 @@ PY = {
 	    }
 	    for(var n in ret)
 		if(ret[n] == data.default[n])
-		    ret[n] = eval(ret[n]);
+		    ret[n] = eval(ret[n]); // need to check this for function calling
 	    return ret;
 	},
-	"PY___BuildClass___": function(where, name, class) {
-	    where[name] = function (a) {
-		return new class(a);
+	"PY___ClassBase___": function (loc, name, of) {
+	    function push_args (args, push) {
+		// move all the args down one
+		var i=-1;
+		while(typeof args[i++] != "undefined");
+		for(;i>=0;--i) {
+		    args[i+1] = args[i];
+		}
+		args[0]=push;
+		return args;
 	    }
+	    var self = loc[name] =  function (_args) {
+		var ret=PY._copy();
+		for(var name in self)
+		    if(typeof self[name] == "function")
+			ret[name] = (function (f) {
+				return function (args,ret) {
+				    push_args(args,ret);
+				    f(args);
+				};
+			    })(self[name],ret);
+		if(typeof ret.__init__ == "function")
+		    ret.__init__(push_args(_args, ret));
+		return ret;
+	    };
+	    return self;
 	},
-	"PY___BuildClassLoad___": function (self) {
-	    
-	},
-	"PY___BuildClassBase___": function (self, of) {
-	    a = new of(PY.const.CLASS_NO_INIT)
+	"PY___CheckVarName___": function (context, name) {
+	    for(var a=0;a<context.length;++a)
+		if(typeof context[a][name] != "undefined")
+		    return;
+	    log("making var name "+name);
+	    context[0][name] = null;
 	}
-	//,"PY___Pass___": function () {}
     },
     _regex: {
 	     "indent":      /([^\S]*)/
 	    ,"preDef":      /([a-z]+)/
-	    ,"defFind":     /(def)\s+([A-Za-z][A-Za-z0-9]*)\s*@\(@(.*)@\)@:/
-	    ,"classFind":   /(class)\s+([A-Za-z][A-Za-z0-9])([^:]*):/
+	    ,"defFind":     /(def)\s+([A-Za-z_][A-Za-z0-9_]*)\s*@\(@(.*)@\)@:/
+	    ,"classFind":   /(class)\s+([A-Za-z_][A-Za-z0-9_]*)([^:]*):/
 	    ,"varName":     /[a-zA-Z_][a-zA-Z0-9_]*/
 	    ,"ifFind":      /if\s+([^:]+):/
 	    ,"elifFind":    /elif\s+([^:]+):/
@@ -126,7 +148,7 @@ PY = {
 	"def": function (obj) {
 	    var trim = PY._regex.trim;
 	    var d = PY._regex.defFind.exec(obj.code); // [all, "def", name, args]
-	    obj.code = "PY___MakeFunction___(this, \""+d[2]+"\", function (PY___argsPassed___)";
+	    obj.code = "PY___MakeFunction___(PY___CONTEXT___[0], \""+d[2]+"\", function (PY___argsPassed___)";
 	    var argsList, argsData={num:[], default:{}};
 	    if(d[3] && d[3] != "") {
 		argsList = d[3].split(",");
@@ -140,10 +162,11 @@ PY = {
 		    }
 		}
 	    }
-	    obj.afterIndent = "var PY___argsPrased___ = PY___PraseArgs___(PY___argsPassed___, "+JSON.stringify(argsData)+"); \n" // load the args
-		+"with (PY___argsPrased___) {"; 
+	    obj.afterIndent = "PY___CONTEXT___.unshift(this);"
+	    +"var PY___argsPrased___ = PY___PraseArgs___(PY___argsPassed___, "+JSON.stringify(argsData)+"); \n" // load the args
+	    +"with (PY___argsPrased___) {"; 
 	    obj.afterIndentClose = ");";
-	    obj.beforeIndentClose = "}";
+	    obj.beforeIndentClose = "} PY___CONTEXT___.shift();";
 	},
 	"for": function (obj) {
 	    var d = PY._regex.forFind.exec(obj.code);
@@ -156,14 +179,14 @@ PY = {
 	    obj.code = "while( "+d[1]+" )";
 	},
 	"class": function (obj) { ////////////////////////////////////////////////////////////////// not done
-	    var d = PY._regex.classFind.exec(obj.code); // ["class", name, other]
-	    obj.code = "PY___BuildClass___(this, \""+d[2]+"\" function (PY___argsPassedClass___)";
+	    var d = PY._regex.classFind.exec(obj.code); // [all, "class", name, other]
+	    obj.code = "PY___CONTEXT___.unshift(PY___ClassBase___(PY___CONTEXT___[0], \""+d[2]+"\", null));";
 	    obj.afterIndent = "";
 	    if(/[^\S]/.exec(d[2])) {
 		obj.afterIndent += "\n"+d[2].split
 	    }
-	    obj.beforeIndentClose = "PY___BuildClassLoad___(this);"
-	    obj.afterIndentClose = ")";
+	    obj.beforeIndentClose = ";PY___CONTEXT___.shift();"
+	    obj.afterIndentClose = "";
 	},
 	"if": function (obj) {
 	    var d = PY._regex.ifFind.exec(obj.code);
@@ -186,7 +209,7 @@ PY = {
 	},
 	"pass": function (obj) {
 	    obj.code = "{}";
-	    obj.indent--;
+	    //obj.indent--;
 	    //obj.code = "PY___Pass___()";
 	},
 	"import": function (obj) {
@@ -217,15 +240,23 @@ PY = {
             	c = c.replace(/#.+/g,"\n").replace(/\/\/.+/g, "\n").replace(/(\(|\))/g, "@$1@");
                 code+=c;
             }else{
-                code += "str(\""+code_split[a].replace(/\"/g, "\\\"").replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\'/g, "\\\'")+"\")\n";
+                code += "str(\""+code_split[a].replace(/\"/g, "\\\"").replace(/\n\s*/g, "\\n").replace(/\r/g, "\\r").replace(/\'/g, "\\\'")+"\")\n";
             }
         }
         //code = code.replace(PY._regex.oneLineP, PY._regex.oneLinePF);
         code_split = code.split("\n");
         code = null;
+	var indent_stack = [""];
         var list = [{"code": "", "indent":0}];
         for(var a = 0;a<code_split.length;a++) {
-            var indent = PY._regex.indent.exec(code_split[a])[0].length;
+            var indent = PY._regex.indent.exec(code_split[a])[0];
+	    while(indent != indent_stack[indent_stack.length-1]) { // fix this // indent_stack[indent_stack.length-1]
+		if(indent.length > indent_stack[indent_stack.length-1].length)
+		    indent_stack.push(indent);
+		else if(indent.length < indent_stack[indent_stack.length-1].length)
+		    indent_stack.pop();
+	    }
+	    indent = indent_stack.length-1;
             var c = code_split[a].substring(indent)
             if(c && c != "") {
 	        while(c.count("(") != c.count(")")) {
@@ -304,11 +335,12 @@ PY = {
 	    }
 	}
         o="";
-        while(o != out) { 
+        while(o != out && false) { // fix this line
 	    o = out; 
 	    // clean up
 	    out = out.replace(/([\{\[\(\)\]\};])[\n\s]+([\{\[\(\)\]\};])/g, "$1$2")
-		.replace(/\n\n/g, "\n")
+		.replace(/\n+/g, "\n")
+		.replace(/([;\{\}]);/g, "$1")
 		.replace(/([\{\};])[\n\s]+/g, "$1");
         }
         
@@ -316,14 +348,14 @@ PY = {
 
     },
     loadCode: function (name, code) {
-	PY._files[name] = new Function ("PY___RunEnv___", "var PY___IMPORT___ = {}; with(PY._functions) { with(PY___RunEnv___) { with(PY___IMPORT___) { with(this) {\n"+ code[0] + "\n}}}}");
+	PY._files[name] = new Function ("PY___RunEnv___", "var PY___IMPORT___ = {}; var PY___CONTEXT___ = [this]; with(PY._functions) { with(PY___RunEnv___) { with(PY___IMPORT___) { with(this) {\n"+ code[0] + "\n}}}}");
 	//console.log(code[0].split("\n"));
     },
     runCode: function (name) {
 	try {
 	    return new PY._files[name]({"__name__": name});
 	}catch(e) {
-	    console.log(e);
+	    PY.log(e);
 	    alert(e.message);
 	}
     },
@@ -348,7 +380,7 @@ PY = {
 	    PY.packer.num=1;
 	},
 	compress: function (code) {
-	    code = code.replace(/([a-zA-Z_$]+)/g, function (a,b) {
+	    code = code.replace(/([a-zA-Z0-9_$]+)/g, function (a,b) {
 		if(PY.packer.data[b])
 		    return PY.packer.data[b];
 		else {
@@ -401,15 +433,15 @@ PY = {
     }
 };
     
-    String.prototype.count = function (what) {
-	var c=0,a=0;
-	while(1) {
-	    a = this.indexOf(what, a)+1;
-	    if(a == 0) break;
-	    c++;
-	}
-	return c;
-    };
-    
-    // init code
-    PY.const.RAND_PRE = PY._random();
+String.prototype.count = function (what) {
+    var c=0,a=0;
+    while(1) {
+	a = this.indexOf(what, a)+1;
+	if(a == 0) break;
+	c++;
+    }
+    return c;
+};
+
+// init code
+PY.const.RAND_PRE = "PY_$_"+PY._random().substring(8);

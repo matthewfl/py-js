@@ -10,6 +10,16 @@ def say(name="world"):
 		alert(name)
 		alert(1)
 
+A = "what"
+
+class ff:
+	def other(self):
+		js:
+			alert(self.n)
+	def __init__(self, something):
+		self.n = something
+
+
 if __name__ == "__main__":
 	main()
 	say(name="something")

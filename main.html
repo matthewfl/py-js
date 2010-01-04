@@ -1,28 +1,28 @@
 <html>
-		<head>
-				<title>Javascript Python</title>
-				<script src="jquery.js" ></script>
-				<script src="py.js" ></script>
-				<script>
-					function run () {
-						$.get('ss.wpy?_='+Math.random(), function (text) {
-								//Python.run(text);
-								var t = PY.compile(text);
-								console.log(t[0]);
-								PY.loadCode("__main__", t);
-								var b = PY.runCode("__main__");
-								console.log(b);
-								b.hi({})
-						});
-					}
-					$(function () {
-						$("p").click(function () {
-							run();
-						});
-					});
-				</script>
-		</head>
-		<body>
-			<p> run </p>
-		</body>
+  <head>
+    <title>Javascript Python</title>
+    <script src="jquery.js" ></script>
+    <script src="py.js" ></script>
+    <script>
+      function run () {
+      $.get('cc.wpy?_='+Math.random(), function (text) {
+      //Python.run(text);
+      var t = PY.compile(text);
+      console.log(t[0]);
+      PY.loadCode("__main__", t);
+      var b = PY.runCode("__main__");
+      console.log(b);
+      b.hi({})
+      });
+      }
+      $(function () {
+      $("p").click(function () {
+      run();
+      });
+      });
+    </script>
+  </head>
+  <body>
+    <p> run </p>
+  </body>
 </html>

@@ -1,0 +1,18 @@
+class name:
+	def __init__(self,name):
+		self.n = name
+		js:
+			alert(self.n)
+	def say(self):
+		js:
+			alert(self.n)
+
+
+def main():
+	mat = name("matthew")
+	oth = name("other")
+	mat.say()
+	oth.say()
+
+if __name__ == "__main__":
+	main()
