@@ -403,27 +403,27 @@ PY = {
 	}
     },
     _CompBuilder: function (c) {
-	var import={}; // true: loaded, false: need loading
+	var Import={}; // true: loaded, false: need loading
 	var comp={};
 	for(var name in c) {
-	    import[name]=true;
+	    Import[name]=true;
 	    comp[name]=PY.packer.compress(c[name][0]);
 	    for(var a=0;a<c[name][1].length;a++) {
-		if(import[c[name][1][a]] !== true)
-		    import[c[name][1][a]] = false;
+		if(Import[c[name][1][a]] !== true)
+		    Import[c[name][1][a]] = false;
 	    }
 	}
 	var i=[];
-	for(var name in import) {
-	    if(import[name] !== true)
+	for(var name in Import) {
+	    if(Import[name] !== true)
 		i.push(name);
 	}
 	return "Py._CompLoader( " + JSON.stringify([PY.packer.out.join('|'), i, comp]) + " );";
     },
     _CompLoader: function (code) {
 	var unPack = PY.packer.unCompress(code[0]);
-	var import = code[1];
-	for(var a=0;a<import.length;a++) {
+	var Import = code[1];
+	for(var a=0;a<Import.length;a++) {
 	    // import[a]
 	}
 	code = code[2];
